@@ -1,0 +1,83 @@
+#!/usr/bin/expect
+
+set timeout 600
+
+set nodes [lindex $argv 0]
+set ipSpec [lindex $argv 1]
+
+spawn /tmp/PADB-Install-5.3.1.0-74380.el6-no_os.x86_64.run
+
+expect "Install Tasks:"
+send "1\r"
+
+expect "Type 'accept' if you accept the terms of the Actian EULA" 
+send "accept\r" 
+
+expect "Dedicated leader node" 
+send "yes\r"
+
+expect "Total nodes in the cluster including leader and standby"  
+send "$nodes\r" 
+
+#expect "Number of standby compute nodes"  
+send "0\r" 
+
+#Use private IP for PADB cluster? (eth0)
+expect "for Actian Matrix cluster"
+send "yes\r"
+
+#Use private IP for PADB cluster? (eth1)
+expect "for Actian Matrix cluster"
+send "no\r"
+
+expect "Are cluster node IPs sequential"
+send "no\r"
+
+expect "Enter cluster flexible IP specification"
+send "$ipSpec\r"
+
+expect "Automate compute node install"
+send "yes\r"
+
+expect "Use existing paraccel user account"
+send "no\r"
+
+expect "Group name or ID for installation" 
+send "paraccel\r"
+
+# What is the number of user tables expected to be deployed across all databases 
+# 1) Less than 100 
+# 2) Between 100 and 500 
+# 3) Between 500 and 2500 
+# 4) Greater than 2500 
+expect "Please select from the options above" 
+send "2\r" 
+
+# What is the work load type 
+# 1) Mostly moderate analytic queries 
+# 2) A range of small and basic to large and complex queries including write statements 
+# 3) Typically one or more write statements at a time plus queries 
+# 4) Low concurrency with large complex queries 
+expect "Please select from the options above" 
+send "1\r" 
+
+expect "Do you wish to review your selections"
+send "no\r"
+
+expect "Enter the compute node root password"
+send "actian\r"
+
+expect "Re-enter the compute node root password"
+send "actian\r"
+
+expect "Run a set of non-destructive tests to verify cluster readiness for Actian Matrix installation"
+send "no\r"
+
+expect "Start Actian Matrix installation"
+send "yes\r"
+
+expect "Reboot the leader node now"
+send "no\r"
+
+
+

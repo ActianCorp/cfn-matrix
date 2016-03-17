@@ -1,0 +1,36 @@
+#!/usr/bin/expect
+
+set timeout 600
+
+spawn /home/paraccel/scripts/stage_two_install.py
+
+expect "Press ENTER to begin"
+send "\r"
+
+expect "Is the above information correct"
+send "yes\r"
+
+expect "Press ENTER to continue"
+send "\r"
+
+expect "Is the above information correct"
+send "yes\r"
+
+expect "Do you want to configure Actian Matrix to send email alerts"
+send "no\r"
+
+expect "Enter new paraccel password for all nodes"
+send "actian\r"
+
+expect "Re-enter new paraccel password for all nodes"
+send "actian\r"
+
+expect "Secure server by removing sudo access from the"
+send "no\r"
+
+expect "Press ENTER to continue"
+send "\r"
+
+expect "Type the task number"
+send "7\r"
+

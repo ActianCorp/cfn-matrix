@@ -1,0 +1,21 @@
+#!/bin/bash
+
+#This field will be populated with CloudFormation wait condition handle during intial resource initialization
+signalURL=
+
+#Ensure all compute nodes have rebooted and can be connected to via SSH
+while read ip; do while ! nc -z -w 1 $ip 22 >&/dev/null; do :; done; done </tmp/computeIPs
+
+#Set needed evironment variables and launch Stage 2 installer
+export LD_LIBRARY_PATH=/usr/lib64:/usr/lib:/opt/paraccel/gcc/lib:/opt/paraccel/gcc/lib64:/usr/local/lib:/home/paraccel/padb/rel/lib:
+export PATH=$PATH:/opt/paraccel/gcc/bin:/usr/local/bin:/home/paraccel/padb/rel/bin:/home/paraccel/padb:/home/paraccel/padb/src/tools:/home/paraccel/padb/obj/tools:/home/paraccel/bin
+set >> /tmp/stage-two-environment.log
+
+/tmp/scripts/stage-two-install.exp
+
+#Remove cron that initializes Stage 2 install
+sudo rm -f /etc/cron.d/stageTwoInstall
+
+#Once Stage 2 install completes signal success to CloudFormation
+echo '{"Status" : "SUCCESS","Reason" : "Matrix Installation Complete","UniqueId" : "InstallComplete","Data" : "Cluster created and Matrix installed successfully."}' >> /tmp/signalResponse
+curl -T /tmp/signalResponse "$signalURL"
