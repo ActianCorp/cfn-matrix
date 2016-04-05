@@ -1,7 +1,32 @@
 {
   "AWSTemplateFormatVersion" : "2010-09-09", 
 
-  "Description" : "Automated Matrix Deployment Template",
+  "Description" : "Actian Matrix Deployment Template",
+
+  "Metadata" : {
+    "AWS::CloudFormation::Interface" : {
+      "ParameterGroups" : [
+        { "Label" : { "default" : "Matrix Leader Node" }, "Parameters" : [ "LeaderInstanceType" ] },
+        { "Label" : { "default" : "Matrix Compute Node" }, "Parameters" : [ "ComputeInstanceType", "ComputeNodeNumber", "ComputeNodePctFS" ] },
+        { "Label" : { "default" : "Matrix Installer" }, "Parameters" : [ "InstallerBucketName", "MatrixInstallFile" ] }
+      ],
+      "ParameterLabels" : {
+        "LeaderInstanceType" : { "default" : "Instance Type" },
+        "ComputeInstanceType" : { "default" : "Instance Type" },
+        "ComputeNodeNumber" : { "default" : "Number of Nodes" },
+        "ComputeNodePctFS" : { "default" : "Linux File Space %" },
+        "InstallerBucketName" : { "default" : "Bucket Name" },
+        "MatrixInstallFile" : { "default" : "Installer RUN File" },
+        "IAMRole" : { "default" : "IAM Role Name" },
+        "PlacementGroup" : { "default" : "Placement Group Name" },
+        "PrivateSubnet" : { "default" : "Private Subnet ID" },
+        "PublicSubnet" : { "default" : "Public Subnet ID" },
+        "SecurityGroup" : { "default" : "Security Group ID" },
+        "SSHKeyName" : { "default" : "KeyPair Name" },
+        "s3fsBucketName" : { "default" : "s3fs Bucket Name" }
+      }
+    }
+  },
 
   "Parameters" : {
 
@@ -43,18 +68,25 @@
       "ConstraintDescription": "Value must be integer bwtween 0 and 50"
     },
 
-    "BucketName": {
+    "InstallerBucketName": {
       "Description" : "Name of S3 bucket containing the Matrix installer and scripts",
       "Type" : "String",
-      "Default" : "matrix53",
+      "Default" : "",
       "ConstraintDescription": "must be a valid S3 bucket name"
     },
 
     "IAMRole": {
-      "Description" : "Identity and Access Managment (IAM) Role with Read-Only access for EC2 and S3 for use with the Matrix install",
+      "Description" : "Identity and Access Managment (IAM) Role with Read-Only access for EC2 and Full or Read-Only access for S3",
       "Type" : "String",
-      "Default" : "MatrixInstall",
+      "Default" : "MatrixRole",
       "ConstraintDescription": "must be a valid IAM Role name"
+    },
+
+    "MatrixInstallFile": {
+      "Description" : "Name of the runnable Matrix installer without OS (e.g. PADB-Install-5.3.1.0-74380.el6-no_os.x86_64.run)",
+      "Type" : "String",
+      "Default" : "PADB-Install-5.3.1.0-74380.el6-no_os.x86_64.run",
+      "ConstraintDescription": "must match the name of a file in InstallerBucketName"
     },
 
     "PlacementGroup": {
@@ -87,6 +119,13 @@
       "Type": "AWS::EC2::KeyPair::KeyName",
       "MinLength": "1",
       "MaxLength": "255"
+    },
+
+    "s3fsBucketName": {
+      "Description" : "Name of S3 bucket attach to each node as a s3fs-fuse file system",
+      "Type" : "String",
+      "Default" : "",
+      "ConstraintDescription": "must be a valid S3 bucket name"
     }
 
   },
@@ -94,8 +133,7 @@
   "Mappings" : {
     "RegionMap" : {
       "us-east-1" : {      
-                           "AMI"                    : "ami-7b506511",
-                           "MatrixInstallFile"      : "PADB-Install-5.3.1.0-74380.el6-no_os.x86_64.run"
+                           "AMI"                    : "ami-714b5c1b"
        }
     }
   },
@@ -270,6 +308,12 @@
           "  diskCnt=$((diskCnt + 1))\n",
           "done\n",
 
+          "s3fsbucket=",{ "Ref" : "s3fsBucketName" },"\n",
+          "if [[ $s3fsbucket = *[!\\ ]* ]]\n",
+          "then\n",
+          "  mkdir -p /mnt/s3/${s3fsbucket}\n",
+          "  echo \"${s3fsbucket} /mnt/s3/${s3fsbucket}  fuse.s3fs _netdev,allow_other,uid=501,gid=501,iam_role=",{ "Ref" : "IAMRole" },"        0 0\" >> /etc/fstab\n",
+          "fi\n",
           "mount -a\n",
 
           "export HOME=\"/root\"\n",
@@ -278,10 +322,10 @@
           "# Download Matrix Installer and config files from S3\n",
           "mkdir /tmp/scripts\n",
           "yum --enablerepo epel-testing install s3cmd -y\n",
-          "s3cmd -r get s3://",{ "Ref" : "BucketName" },"/ /tmp/ >> /tmp/s3cmd.log\n",
+          "s3cmd -r get s3://",{ "Ref" : "InstallerBucketName" },"/ /tmp/ >> /tmp/s3cmd.log\n",
 
           "# Modify files to be executable and replace dynamic runtime values\n",
-          "chmod 755 /tmp/",{ "Fn::FindInMap" : ["RegionMap", { "Ref" : "AWS::Region" }, "MatrixInstallFile" ]},"\n",
+          "chmod 755 /tmp/",{ "Ref" : "MatrixInstallFile" },"\n",
           "echo \"",{ "Ref" : "myWaitHandle" },"\" >> /tmp/signalURL\n",
           "sed -i 's/\\&/\\\\\\&/g' /tmp/signalURL\n",
           "export SIGNALURL=\"$(cat /tmp/signalURL)\"\n",
@@ -297,7 +341,7 @@
           "sed -i 's/#PasswordAuthentication yes/PasswordAuthentication yes/' /etc/ssh/sshd_config\n",
           "sudo /etc/init.d/sshd reload",
 
-          "# Use AWS CLI to acquire private OPs of compute nodes in CF stack\n",
+          "# Use AWS CLI to acquire private IPs of compute nodes in CF stack\n",
           "export NODENUMBER=$(expr ",{ "Ref" : "ComputeNodeNumber" },")\n",
           "touch /tmp/computeIPs\n",
           "while [ $(wc -l /tmp/computeIPs | cut -f1 -d ' ') -ne \"$NODENUMBER\" ]; do\n",
@@ -324,7 +368,7 @@
           "ipSpec=\"$(ifconfig eth0 | grep 'inet addr:' | cut -d: -f2 | awk '{ print $1}')\"\n",
           "while read ip; do ipSpec=\"$ipSpec;$ip\"; done </tmp/computeIPs\n",
           "chmod 700 /tmp/scripts/stage-one-install.exp\n",
-          "/tmp/scripts/stage-one-install.exp \"$totalNodes\" \"$ipSpec\" >> /tmp/stage-one-install.log\n",
+          "/tmp/scripts/stage-one-install.exp \"$totalNodes\" \"$ipSpec\" ",{"Ref" : "MatrixInstallFile"}," >> /tmp/stage-one-install.log\n",
 
           "reboot\n"
 
@@ -352,6 +396,7 @@
       "Properties" : {
         "AssociatePublicIpAddress" : "False",
         "ImageId" : { "Fn::FindInMap" : ["RegionMap", { "Ref" : "AWS::Region" }, "AMI" ]},
+        "IamInstanceProfile": { "Ref" : "IAMRole"},
         "InstanceType" : { "Ref" : "ComputeInstanceType" },
         "KeyName" : { "Ref" : "SSHKeyName" },
         "SecurityGroups" : [ { "Ref" : "SecurityGroup" } ],
@@ -497,6 +542,15 @@
           "  fi\n",
           "  diskCnt=$((diskCnt + 1))\n",
           "done\n",
+
+          "s3fsbucket=",{ "Ref" : "s3fsBucketName" },"\n",
+          "shard_index=$(curl http://169.254.169.254/latest/meta-data/ami-launch-index)\n",
+          "shard_index=$((shard_index+1))\n",
+          "if [[ $s3fsbucket = *[!\\ ]* ]]\n",
+          "then\n",
+          "  mkdir -p /mnt/s3/${s3fsbucket}\n",
+          "  echo \"${s3fsbucket} /mnt/s3/${s3fsbucket}  fuse.s3fs _netdev,allow_other,uid=501,gid=501,shard_count=",{ "Ref" : "ComputeNodeNumber" },",shard_index=${shard_index},iam_role=",{ "Ref" : "IAMRole" },"        0 0\" >> /etc/fstab\n",
+          "fi\n",
 
           "mount -a\n",
 

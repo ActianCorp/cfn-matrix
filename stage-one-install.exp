@@ -4,8 +4,10 @@ set timeout 600
 
 set nodes [lindex $argv 0]
 set ipSpec [lindex $argv 1]
+set installer [lindex $argv 2]
 
-spawn /tmp/PADB-Install-5.3.1.0-74380.el6-no_os.x86_64.run
+# spawn /tmp/PADB-Install-5.3.1.0-74380.el6-no_os.x86_64.run
+spawn /tmp/$installer
 
 expect "Install Tasks:"
 send "1\r"
