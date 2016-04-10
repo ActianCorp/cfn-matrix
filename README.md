@@ -10,8 +10,8 @@ The user can select the instance types for leader and compute nodes.
 Instance storage (ephemeral) is used for database storage, so storage is limited by the instance type selection.  All storage costs are part of the instance cost.
 The larger instance types will typically have more storage and support higher network speeds.
 
-***Warning***
-The stacks created using this template use auto scaling groups and instance storage.   The EC2 instances that are created cannot be stopped using the EC2 console.
+***Warning:***
+The stacks created using this template use auto scaling groups and instance storage.   The EC2 instances that are created cannot be stopped using the EC2 console and are not suitable for always-on deployments of Matrix.
   
 Actian Matrix is a high performance massively parallel (MPP), columnar, analytic database.
 
