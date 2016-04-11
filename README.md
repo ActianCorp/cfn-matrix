@@ -65,6 +65,8 @@ These resources are released when the stack is deleted.
 ## Creating a Matrix Stack
 
 The easiest way to create a new stack is to use the [CloudFormation Console](https://console.aws.amazon.com/cloudformation/home).
+From the console use the *Create New Stack* button.  This will take you to the *Create stack* dialog.  From this dialog select *Upload a template to Amazon S3* option and use the
+*Browse...* button to locate and upload a copy of *cfn-matrix.template*.
 
 ![Create A New Stack Dialog](https://raw.githubusercontent.com/ActianCorp/cfn-matrix/master/Create_A_New_Stack.png)
 
