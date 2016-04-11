@@ -22,8 +22,32 @@ Actian Matrix is a high performance massively parallel (MPP), columnar, analytic
 3. A SSH Key-Pair for connecting with instances.
 4. An EC2 Placement Group to support high network throughput.
 5. A security group that allows all traffic between members of that security group, as well as inbound SSH traffic from your location.
-7. An IAM Role with Read-Only access to S3 and EC2.
+7. An IAM Role with AmazonEC2ReadOnlyAccess and AmazonS3ReadOnlyAccess policies attached is needed for the installation of Matrix.   The same role is used for the s3fs-fuse filesystem, 
+so if you need to create files using s3fs the role should include the AmazonS3FullAccess policy.
 8. An S3 bucket in your working region to store a copy of the Matrix Installer and script files.
+9. An optional S3 bucket to mount as a s3fs filesystem
+
+### Creating the Installer S3 Bucket
+
+The Matrix installer and the helper scripts are copied from a S3 bucket visible to the account used to run the template.  The 
+installer file must be in the root of the bucket and the scripts must be copied to a folder called *scripts*.
+
+![Installer S3 Bucket](https://raw.githubusercontent.com/pcdingman/cfn-matrix/master/S3_Management_Console.png)
+
+The installer comes from the [Actian Electronic Software Distribution (ESD)](http://esd.actian.com/) site.  You should download the *Self extracting Installer for RHEL 6 Matrix only installation*
+version of the installer.  The current helper scripts work with Matrix versions 5.3 and later.
+
+Before the installer is uploaded to the S3 bucket you will need to extract the *.run* file from the compressed tar file.   The *.run* file is then 
+uploaded to the S3 bucket.
+
+The steps for creating the installer S3 bucket:
+
+1. Download a copy of the installer from ESD
+2. Uncompress and untar the installer
+3. Create the S3 bucket
+4. Create the *scripts* folder
+5. Upload the installer *.run* file to the bucket
+6. Upload stage-one-install.exp, stage-two-install.exp and stage-two-install-wrapper to the *scripts* folder
 
 ## Stack Resources Used
 
@@ -38,19 +62,29 @@ The resource limits for the following resources on the AWS account will need to 
 
 These resources are released when the stack is deleted.
 
+## Creating a Matrix Stack
+
+The easiest way to create a new stack is to use the [CloudFormation Console](https://console.aws.amazon.com/cloudformation/home).
+
+![Create A New Stack Dialog](https://raw.githubusercontent.com/pcdingman/cfn-matrix/master/Create_A_New_Stack.png)
+
 ## Template Parameters
 
-1. BucketName:  The name of the bucket containing the Matrix installer
+The template defines the following parameters.   These names can be used when the template is used with the AWS command line interface.
+
+1. InstallerBucketName:  The name of the bucket containing the Matrix installer and helper scripts
 2. ComputeInstanceType:   This now supports c3.xlarge, c3.2xlarge, c3.4xlarge, c3.8xlarge, d2.xlarge, d2.2xlarge, d2.4xlarge, d2.8xlarge, i2.xlarge, i2.2xlarge, i2.4xlarge, and i2.8xlarge instance types.
 3. ComputeNodeNumber:  The number of Matrix compute nodes.   These nodes are separate from the leader node.
-4. ComputeNodePctFS:   Percentage of available disk space on each disk used for a Linux file system.
+4. ComputeNodePctFS:   Percentage of available disk space on each disk used for a Linux filesystem.
 5. IAMRole:   The default name is MatrixInstall.   If the user creates one with this name they won't need to enter this.
 6. LeaderInstanceType:   Supports all of the same types as the ComputeInstanceType.
-7. PlacementGroup:   The default name is MatrixPG.   If the user creates one with the same name they won't have to enter this.
-8. PrivateSubnet:  The drop down gives a list of valid subnets.   The user should select a privite subnet that belongs to the same VPC and availability zone for the public subnet specified below.
-9. PublicSubnet:   The drop down gives a list of valid subnets.   Needs to be in the same VPC and AZ as above.
-10. SecurityGroup: Name of a security group with external SSH access and open access for all inbound traffic originating from both the specified public and private subnets.
-11. SSHKeyName:  Name of an existing EC2 KeyPair to enable SSH access to the leader node instance.
+7. MatrixInstallFile: The name of *.run* file to use from the installer bucket.
+8. PlacementGroup:   The default name is MatrixPG.   If the user creates one with the same name they won't have to enter this.
+9. PrivateSubnet:  The drop down gives a list of valid subnets.   The user should select a privite subnet that belongs to the same VPC and availability zone for the public subnet specified below.
+10. PublicSubnet:   The drop down gives a list of valid subnets.   Needs to be in the same VPC and AZ as above.
+11. SecurityGroup: Name of a security group with external SSH access and open access for all inbound traffic originating from both the specified public and private subnets.
+12. SSHKeyName:  Name of an existing EC2 KeyPair to enable SSH access to the leader node instance.
+13. s3fsBucketName (optional): The name of a S3 bucket to mount as a filesystem.   The filesystem mount is done for each of the nodes at */mnt/s3/s3fsBucketName*.
 
 ## License ##
 
