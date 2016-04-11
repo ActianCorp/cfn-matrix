@@ -122,7 +122,7 @@
     },
 
     "s3fsBucketName": {
-      "Description" : "Name of S3 bucket attach to each node as a s3fs-fuse file system",
+      "Description" : "Name of an optional S3 bucket attach to each node as a s3fs-fuse file system",
       "Type" : "String",
       "Default" : "",
       "ConstraintDescription": "must be a valid S3 bucket name"
