@@ -32,7 +32,7 @@ so if you need to create files using s3fs the role should include the AmazonS3Fu
 The Matrix installer and the helper scripts are copied from a S3 bucket visible to the account used to run the template.  The 
 installer file must be in the root of the bucket and the scripts must be copied to a folder called *scripts*.
 
-![Installer S3 Bucket](https://raw.githubusercontent.com/pcdingman/cfn-matrix/master/S3_Management_Console.png)
+![Installer S3 Bucket](https://raw.githubusercontent.com/ActianCorp/cfn-matrix/master/S3_Management_Console.png)
 
 The installer comes from the [Actian Electronic Software Distribution (ESD)](http://esd.actian.com/) site.  You should download the *Self extracting Installer for RHEL 6 Matrix only installation*
 version of the installer.  The current helper scripts work with Matrix versions 5.3 and later.
@@ -66,7 +66,7 @@ These resources are released when the stack is deleted.
 
 The easiest way to create a new stack is to use the [CloudFormation Console](https://console.aws.amazon.com/cloudformation/home).
 
-![Create A New Stack Dialog](https://raw.githubusercontent.com/pcdingman/cfn-matrix/master/Create_A_New_Stack.png)
+![Create A New Stack Dialog](https://raw.githubusercontent.com/ActianCorp/cfn-matrix/master/Create_A_New_Stack.png)
 
 ## Template Parameters
 
